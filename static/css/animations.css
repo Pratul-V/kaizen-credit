@@ -1,0 +1,166 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ANIMATIONS — Keyframes, Transitions, Micro-Interactions
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Fade In Up ────────────────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.6s ease-out forwards;
+    animation-delay: var(--delay, 0s);
+}
+
+/* ─── Pulse Glow ────────────────────────────────────────────────────────────── */
+@keyframes pulseGlow {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+}
+
+/* ─── Spin ──────────────────────────────────────────────────────────────────── */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ─── Shimmer (Loading Skeleton) ────────────────────────────────────────────── */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.shimmer {
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.03) 25%,
+        rgba(255,255,255,0.08) 50%,
+        rgba(255,255,255,0.03) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ─── Background Orb Float ──────────────────────────────────────────────────── */
+@keyframes orbFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%      { transform: translate(40px, 60px) scale(1.1); }
+    66%      { transform: translate(-30px, 30px) scale(0.95); }
+}
+
+@keyframes orbFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%      { transform: translate(-50px, -40px) scale(1.05); }
+    66%      { transform: translate(30px, -20px) scale(0.9); }
+}
+
+@keyframes orbFloat3 {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50%      { transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* ─── Gauge Arc Draw ────────────────────────────────────────────────────────── */
+@keyframes gaugeArc {
+    from { stroke-dashoffset: var(--gauge-circumference); }
+    to   { stroke-dashoffset: var(--gauge-target); }
+}
+
+/* ─── Counter Animation (JS-driven, this just triggers visibility) ──────────── */
+@keyframes countUpTrigger {
+    from { opacity: 0.5; }
+    to   { opacity: 1; }
+}
+
+/* ─── Slide In From Right ───────────────────────────────────────────────────── */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-in-right {
+    animation: slideInRight 0.5s ease-out forwards;
+    animation-delay: var(--delay, 0s);
+}
+
+/* ─── Scale Pop ─────────────────────────────────────────────────────────────── */
+@keyframes scalePop {
+    0% { transform: scale(0.8); opacity: 0; }
+    70% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.scale-pop {
+    animation: scalePop 0.4s var(--transition-spring) forwards;
+    animation-delay: var(--delay, 0s);
+}
+
+/* ─── Chart Bar Grow ────────────────────────────────────────────────────────── */
+@keyframes barGrow {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+}
+
+/* ─── Micro-Interactions ────────────────────────────────────────────────────── */
+/* KPI card hover lift */
+.kpi-card {
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+/* Chart card hover */
+.chart-card {
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.chart-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Nav link icon bounce on hover */
+.nav-link:hover .nav-icon {
+    animation: scalePop 0.3s ease forwards;
+}
+
+/* Form input subtle bounce on focus */
+.form-group input:focus,
+.form-group select:focus {
+    animation: none; /* Already handled by box-shadow transition */
+}
+
+/* Policy banner entrance */
+.policy-banner {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Alert entrance */
+.alert {
+    animation: slideInRight 0.4s ease-out forwards;
+}

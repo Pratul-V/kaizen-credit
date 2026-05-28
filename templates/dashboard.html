@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}System Intelligence Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in-up">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <h1 class="page-title">System & Model Intelligence</h1>
+            <p class="page-subtitle">Real-time overview of AI engine, policies, and business rules</p>
+        </div>
+    </div>
+</div>
+
+<!-- System Health KPI Cards -->
+<div class="analytics-grid fade-in-up" style="--delay: 0.1s; display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+    <div class="kpi-card glass-panel" style="flex: 1; padding: 1.5rem; text-align: center; min-width: 250px;">
+        <div style="color: #2ecc71; font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-brain"></i></div>
+        <div class="kpi-value" style="font-size: 1.5rem;">Online</div>
+        <div class="kpi-label">XGBoost AI Model</div>
+    </div>
+    <div class="kpi-card glass-panel" style="flex: 1; padding: 1.5rem; text-align: center; min-width: 250px;">
+        <div style="color: #3498db; font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-shield-alt"></i></div>
+        <div class="kpi-value" style="font-size: 1.5rem;">Active</div>
+        <div class="kpi-label">Risk Pricing Engine</div>
+    </div>
+    <div class="kpi-card glass-panel" style="flex: 1; padding: 1.5rem; text-align: center; min-width: 250px;">
+        <div style="color: #9b59b6; font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-network-wired"></i></div>
+        <div class="kpi-value" style="font-size: 1.5rem;">Initialized</div>
+        <div class="kpi-label">SHAP Explainer</div>
+    </div>
+</div>
+
+<div class="charts-grid fade-in-up" style="--delay: 0.3s; display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+    <!-- Global Feature Importance -->
+    <div class="chart-card glass-panel">
+        <div class="chart-header" style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="chart-title" style="margin: 0;">Global Feature Importance</h3>
+            <span class="chart-badge" style="background: rgba(52, 152, 219, 0.2); color: #3498db; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">AI Weights</span>
+        </div>
+        <div class="chart-body" style="padding: 1.5rem;">
+            {% if feature_importance %}
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for feature in feature_importance %}
+                    <li style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem; font-size: 0.9rem;">
+                            <span>{{ feature.feature }}</span>
+                            <span style="font-weight: bold; color: var(--primary);">{{ feature.weight }}%</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                            <div style="height: 100%; width: {{ feature.weight }}%; background: var(--gradient-primary); border-radius: 4px;"></div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Feature importance data not available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Active Risk Tiers & Policy -->
+    <div class="chart-card glass-panel">
+        <div class="chart-header" style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="chart-title" style="margin: 0;">Pricing Policy & Risk Tiers</h3>
+            <span class="chart-badge" style="background: rgba(46, 204, 113, 0.2); color: #2ecc71; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">Active Configuration</span>
+        </div>
+        <div class="chart-body" style="padding: 1.5rem;">
+            <h4 style="margin-top: 0; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Probability Thresholds</h4>
+            <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                    <span style="color: #2ecc71; font-weight: 600;">Low Risk</span>
+                    <span>{{ risk_tiers.low[0] }}% - {{ risk_tiers.low[1] }}%</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                    <span style="color: #f1c40f; font-weight: 600;">Medium Risk</span>
+                    <span>{{ risk_tiers.medium[0] }}% - {{ risk_tiers.medium[1] }}%</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                    <span style="color: #e67e22; font-weight: 600;">High Risk</span>
+                    <span>{{ risk_tiers.high[0] }}% - {{ risk_tiers.high[1] }}%</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                    <span style="color: #e74c3c; font-weight: 600;">Critical Risk</span>
+                    <span>{{ risk_tiers.critical[0] }}% - {{ risk_tiers.critical[1] }}%</span>
+                </div>
+            </div>
+            
+            <h4 style="margin-top: 0; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Engine Actions</h4>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                    <span>Auto-Reject Threshold</span>
+                    <span style="color: #e74c3c; font-weight: bold;">> {{ policy.auto_reject_prob }}%</span>
+                </li>
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                    <span>Manual Review Threshold</span>
+                    <span style="color: #f1c40f; font-weight: bold;">> {{ policy.manual_review_prob }}%</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Active Business Rules Engine -->
+    <div class="chart-card glass-panel" style="grid-column: 1 / -1;">
+        <div class="chart-header" style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="chart-title" style="margin: 0;">Business Rules Validation Engine</h3>
+            <span class="chart-badge" style="background: rgba(155, 89, 182, 0.2); color: #9b59b6; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">Guardrails</span>
+        </div>
+        <div class="chart-body" style="padding: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            <div>
+                <h4 style="margin-top: 0; color: #e74c3c; font-size: 1.1rem; margin-bottom: 0.5rem;">Hard Rejection Rules</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Violations instantly abort the prediction process.</p>
+                <ul style="padding-left: 1.2rem; font-size: 0.9rem; line-height: 1.8;">
+                    <li>Applicant Age must be between <strong style="color: var(--text-primary);">{{ validation.age_min }}</strong> and <strong style="color: var(--text-primary);">{{ validation.age_max }}</strong>.</li>
+                    <li>Requested Loan Amount must be <strong style="color: var(--text-primary);">> ₹{{ validation.loan_amount_min }}</strong>.</li>
+                    <li>Maximum DTI Ratio allowed is <strong style="color: var(--text-primary);">60%</strong>.</li>
+                    <li>Interest Rate requested must be between <strong style="color: var(--text-primary);">{{ validation.int_rate_min }}%</strong> and <strong style="color: var(--text-primary);">{{ validation.int_rate_max }}%</strong>.</li>
+                    <li>Employment length cannot exceed <strong style="color: var(--text-primary);">(Age - {{ validation.age_min }})</strong> years.</li>
+                </ul>
+            </div>
+            <div>
+                <h4 style="margin-top: 0; color: #f1c40f; font-size: 1.1rem; margin-bottom: 0.5rem;">Soft Warning Thresholds</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Violations flag the application for manual review.</p>
+                <ul style="padding-left: 1.2rem; font-size: 0.9rem; line-height: 1.8;">
+                    <li>Loan amount > <strong style="color: var(--text-primary);">{{ (warnings.loan_to_income_ratio * 100)|int }}%</strong> of income.</li>
+                    <li>Applicant is < <strong style="color: var(--text-primary);">{{ warnings.young_age_threshold }}</strong> years old with > <strong style="color: var(--text-primary);">{{ warnings.young_credit_hist_max }}</strong> years credit history.</li>
+                    <li>Low income (< ₹<strong style="color: var(--text-primary);">{{ warnings.low_income_threshold }}</strong>) requesting high loan (> ₹<strong style="color: var(--text-primary);">{{ warnings.low_income_high_loan }}</strong>).</li>
+                    <li>Requested interest rate > <strong style="color: var(--text-primary);">{{ warnings.high_interest_rate }}%</strong>.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

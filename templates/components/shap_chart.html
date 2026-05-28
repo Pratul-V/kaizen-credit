@@ -1,0 +1,19 @@
+<!-- SHAP Waterfall Chart Component -->
+{# Usage: {% include 'components/shap_chart.html' %} with result context variable #}
+<div class="shap-container glass-panel" id="shap-container">
+    <div class="shap-header">
+        <h3 class="shap-title">
+            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            SHAP Feature Contributions
+        </h3>
+        <p class="shap-subtitle">What drove this prediction — features pushing toward (red) and away from (blue) default</p>
+    </div>
+    <div class="shap-chart-wrapper">
+        <canvas id="shap-chart-canvas" height="300"></canvas>
+    </div>
+    <div class="shap-base-value" id="shap-base-value"></div>
+</div>

@@ -1,0 +1,55 @@
+<!-- Sidebar Navigation Component -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo" style="width: 100%; display: flex; justify-content: center; padding: 10px 0;">
+            <img id="kaizen-logo" src="{{ url_for('static', filename='img/Logo_Dark.png') }}" alt="Kaizen Credit Logo" style="width: 100%; max-width: 180px; height: auto;" class="brand-logo">
+        </div>
+    </div>
+
+    <div class="sidebar-nav">
+        <a href="/" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}" id="nav-dashboard">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span>Dashboard</span>
+        </a>
+        <a href="/predict" class="nav-link {% if request.endpoint == 'predict.predict_risk' %}active{% endif %}" id="nav-predict">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span>Risk Analysis</span>
+        </a>
+        <a href="/simulate" class="nav-link {% if request.endpoint == 'simulate.simulate_page' %}active{% endif %}" id="nav-simulate">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span>What-If Simulator</span>
+        </a>
+    </div>
+
+    <div class="sidebar-footer">
+        <!-- System status removed -->
+    </div>
+</nav>
+
+<!-- Mobile Nav Toggle -->
+<button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+</button>
+
+<script>
+    const toggle = document.getElementById('mobile-nav-toggle');
+    const sidebar = document.getElementById('sidebar');
+    if (toggle) {
+        toggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+    }
+</script>

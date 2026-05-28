@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+{% block title %}Risk Analysis{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in-up">
+    <h1 class="page-title">Credit Risk Analysis</h1>
+    <p class="page-subtitle">AI-powered loan risk assessment with SHAP explainability</p>
+</div>
+
+<!-- Alerts -->
+{% if errors %}
+<div class="alert alert-danger fade-in-up" id="alert-errors">
+    <div class="alert-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+    </div>
+    <div class="alert-content">
+        <strong>Business Rules Validation Failed</strong> — Prediction aborted.
+        <ul>
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{% if warnings %}
+<div class="alert alert-warning fade-in-up" id="alert-warnings">
+    <div class="alert-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+    </div>
+    <div class="alert-content">
+        <strong>Suspicious Activity Detected</strong>
+        <ul>
+            {% for warning in warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<div class="predict-layout">
+    <!-- Left Column: Form -->
+    <div class="form-column fade-in-up" style="--delay: 0.1s">
+        <div class="form-panel glass-panel">
+            <div class="form-header">
+                <h2 class="form-title">
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                    </svg>
+                    Applicant Details
+                </h2>
+            </div>
+
+            <form method="POST" action="/predict" id="predict-form">
+                <div class="form-grid">
+                    <!-- Case Profile -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Case Profile</h3>
+                        
+                        <div class="form-group">
+                            <label for="person_name">Applicant Name</label>
+                            <input type="text" id="person_name" name="person_name" 
+                                   value="{{ form_data.get('person_name', '') }}" 
+                                   placeholder="e.g. John Doe" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="customer_id">Customer ID</label>
+                            <input type="text" id="customer_id" name="customer_id" 
+                                   value="{{ form_data.get('customer_id', '') }}" 
+                                   placeholder="e.g. CUST-1001" required>
+                        </div>
+                    </div>
+
+                    <!-- Personal Information -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Personal Information</h3>
+                        
+                        <div class="form-group">
+                            <label for="person_age">Age</label>
+                            <input type="number" id="person_age" name="person_age" 
+                                   value="{{ form_data.get('person_age', '25') }}" 
+                                   min="18" max="100" required>
+                            <span class="field-hint">18 - 100 years</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="person_income">Annual Income (₹)</label>
+                            <input type="number" id="person_income" name="person_income" 
+                                   value="{{ form_data.get('person_income', '60000') }}" 
+                                   min="1" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="person_emp_length">Employment Length (years)</label>
+                            <input type="number" step="0.1" id="person_emp_length" name="person_emp_length" 
+                                   value="{{ form_data.get('person_emp_length', '3.0') }}" 
+                                   min="0" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="person_home_ownership">Home Ownership</label>
+                            <select id="person_home_ownership" name="person_home_ownership">
+                                {% for opt in ['RENT', 'OWN', 'MORTGAGE', 'OTHER'] %}
+                                <option value="{{ opt }}" {% if form_data.get('person_home_ownership') == opt %}selected{% endif %}>{{ opt }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Loan Details -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Loan Details</h3>
+
+                        <div class="form-group">
+                            <label for="loan_amnt">Loan Amount (₹)</label>
+                            <input type="number" id="loan_amnt" name="loan_amnt" 
+                                   value="{{ form_data.get('loan_amnt', '15000') }}" 
+                                   min="1" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loan_int_rate">Interest Rate (%)</label>
+                            <input type="number" step="0.1" id="loan_int_rate" name="loan_int_rate" 
+                                   value="{{ form_data.get('loan_int_rate', '11.0') }}" 
+                                   min="0" max="40" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loan_intent">Loan Intent</label>
+                            <select id="loan_intent" name="loan_intent">
+                                {% for opt in ['PERSONAL', 'EDUCATION', 'MEDICAL', 'VENTURE', 'HOMEIMPROVEMENT', 'DEBTCONSOLIDATION'] %}
+                                <option value="{{ opt }}" {% if form_data.get('loan_intent') == opt %}selected{% endif %}>{{ opt }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cibil_score">CIBIL Score</label>
+                            <input type="number" id="cibil_score" name="cibil_score" 
+                                   value="{{ form_data.get('cibil_score', '720') }}" 
+                                   min="-1" max="900" required>
+                            <span class="field-hint">Range: 300 - 900 (Use 0 or -1 for no history)</span>
+                        </div>
+                    </div>
+
+                    <!-- Credit History -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Credit History</h3>
+
+                        <div class="form-group">
+                            <label for="cb_person_default_on_file">Historical Default</label>
+                            <select id="cb_person_default_on_file" name="cb_person_default_on_file">
+                                <option value="N" {% if form_data.get('cb_person_default_on_file', 'N') == 'N' %}selected{% endif %}>No</option>
+                                <option value="Y" {% if form_data.get('cb_person_default_on_file') == 'Y' %}selected{% endif %}>Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cb_person_cred_hist_length">Credit History Length (years)</label>
+                            <input type="number" id="cb_person_cred_hist_length" name="cb_person_cred_hist_length" 
+                                   value="{{ form_data.get('cb_person_cred_hist_length', '4') }}" 
+                                   min="0" required>
+                        </div>
+                    </div>
+
+                    <!-- Computed Field -->
+                    <div class="form-section">
+                        <div class="computed-field glass-panel">
+                            <span class="computed-label">Loan-to-Income Ratio</span>
+                            <span class="computed-value" id="loan-to-income-display">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="submit-btn">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <span class="btn-text">Analyze Risk</span>
+                    <span class="btn-loading" style="display:none;">
+                        <span class="spinner"></span> Processing...
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Results -->
+    <div class="results-column">
+        {% if result %}
+        <!-- AI Decision Card -->
+        <div class="policy-banner {{ result.pricing.risk_metadata.css_class }} fade-in-up" style="--delay: 0.2s" id="policy-banner">
+            <div class="policy-action">
+                {{ result.pricing.risk_metadata.icon }} {{ result.pricing.action }}
+            </div>
+            <div class="policy-reason">{{ result.pricing.risk_metadata.explanation }}</div>
+            {% if result.pricing.warnings %}
+            <div class="policy-warnings" style="margin-top: 10px; font-size: 0.9em; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px;">
+                <strong>System Warnings:</strong>
+                <ul style="margin: 5px 0 0 20px;">
+                    {% for warning in result.pricing.warnings %}
+                    <li>{{ warning }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Counter Offer Panel -->
+        {% if result.pricing.counter_offer %}
+        <div class="counter-offer-panel glass-panel fade-in-up" style="--delay: 0.25s">
+            <div class="panel-header">
+                <h3 class="panel-title">Intelligent Counter-Offer</h3>
+                <span class="badge badge-warning">Action Required</span>
+            </div>
+            <div class="offer-comparison">
+                <div class="offer-col original-terms">
+                    <h4>Original Request</h4>
+                    <div class="term-row"><span>Amount</span> <strong>₹{{ result.pricing.original_terms.loan_amount }}</strong></div>
+                    <div class="term-row"><span>Interest Rate</span> <strong>{{ result.pricing.original_terms.interest_rate }}%</strong></div>
+                    <div class="term-row"><span>Tenure</span> <strong>{{ result.pricing.original_terms.tenure_months }} mos</strong></div>
+                    <div class="term-row"><span>Monthly EMI</span> <strong>₹{{ result.pricing.original_terms.emi }}</strong></div>
+                    <div class="term-row"><span>DTI Ratio</span> <strong>{{ (result.pricing.original_terms.dti * 100)|round(1) }}%</strong></div>
+                </div>
+                <div class="offer-col revised-terms">
+                    <h4>Revised Offer</h4>
+                    <div class="term-row"><span>Amount</span> <strong>₹{{ result.pricing.counter_offer.loan_amount }}</strong></div>
+                    <div class="term-row"><span>Interest Rate</span> <strong>{{ result.pricing.counter_offer.interest_rate }}%</strong></div>
+                    <div class="term-row"><span>Tenure</span> <strong>{{ result.pricing.counter_offer.tenure_months }} mos</strong></div>
+                    <div class="term-row"><span>Monthly EMI</span> <strong>₹{{ result.pricing.counter_offer.emi }}</strong></div>
+                    <div class="term-row"><span>DTI Ratio</span> <strong>{{ (result.pricing.counter_offer.dti * 100)|round(1) }}%</strong></div>
+                </div>
+            </div>
+            <div class="offer-conditions">
+                <h4>Approval Conditions:</h4>
+                <ul>
+                    {% for condition in result.pricing.counter_offer.conditions %}
+                    <li>{{ condition }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% else %}
+        <!-- Financial Affordability Analysis -->
+        <div class="financial-panel glass-panel fade-in-up" style="--delay: 0.25s">
+            <div class="panel-header">
+                <h3 class="panel-title">Financial Overview</h3>
+            </div>
+            <div class="financial-grid">
+                <div class="fin-stat">
+                    <span class="fin-label">Loan Amount</span>
+                    <span class="fin-value">₹{{ result.pricing.original_terms.loan_amount }}</span>
+                </div>
+                <div class="fin-stat">
+                    <span class="fin-label">Interest Rate</span>
+                    <span class="fin-value">{{ result.pricing.original_terms.interest_rate }}%</span>
+                </div>
+                <div class="fin-stat">
+                    <span class="fin-label">Monthly EMI</span>
+                    <span class="fin-value">₹{{ result.pricing.original_terms.emi }}</span>
+                </div>
+                <div class="fin-stat">
+                    <span class="fin-label">Total Interest</span>
+                    <span class="fin-value">₹{{ result.pricing.original_terms.total_interest }}</span>
+                </div>
+            </div>
+            <div class="dti-progress-container">
+                <div class="dti-label">
+                    <span>Debt-to-Income (DTI)</span>
+                    <span>{{ (result.pricing.original_terms.dti * 100)|round(1) }}%</span>
+                </div>
+                <div class="dti-progress-bar">
+                    <div class="dti-fill" style="width: {{ [result.pricing.original_terms.dti * 100, 100]|min }}%; background: {% if result.pricing.original_terms.dti > 0.40 %}#ef4444{% elif result.pricing.original_terms.dti > 0.30 %}#f59e0b{% else %}#10b981{% endif %};"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+
+
+        <!-- Risk Gauge -->
+        <div class="gauge-card glass-panel fade-in-up" style="--delay: 0.35s">
+            <div class="gauge-header">
+                <h3 class="gauge-title">Default Probability</h3>
+                <span class="risk-tier-badge {{ result.pricing.risk_metadata.css_class }}">
+                    {{ result.pricing.risk_metadata.icon }} {{ result.pricing.risk_metadata.label }}
+                </span>
+            </div>
+            {% include 'components/risk_gauge.html' %}
+        </div>
+
+        <!-- Confidence Meter -->
+        <div class="confidence-card glass-panel fade-in-up" style="--delay: 0.38s" style="margin-top: 1.5rem; padding: 1.5rem;">
+            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="panel-title" style="margin: 0;">AI Confidence Score</h3>
+                <span style="font-size: 1.25rem; font-weight: bold; color: var(--primary);">{{ result.confidence }}%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 10px; overflow: hidden;">
+                <div style="height: 100%; width: {{ result.confidence }}%; background: var(--gradient-primary); border-radius: 4px;"></div>
+            </div>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-secondary);">
+                {% if result.confidence > 80 %}High confidence in this prediction based on historical patterns.{% else %}Moderate confidence; consider manual review.{% endif %}
+            </p>
+        </div>
+
+        <!-- AI Risk Breakdown -->
+        <div class="risk-breakdown-card glass-panel fade-in-up" style="--delay: 0.39s" style="margin-top: 1.5rem; padding: 1.5rem;">
+            <h3 class="panel-title" style="margin-top: 0;">AI Risk Breakdown</h3>
+            <ul style="list-style: none; padding: 0; margin: 10px 0 0 0;">
+                {% for shap in result.shap_values[:5] %}
+                <li style="margin-bottom: 8px; display: flex; align-items: center; font-size: 0.9rem;">
+                    {% if shap.value > 0 %}
+                        <span style="color: #e74c3c; margin-right: 8px;"><i class="fas fa-arrow-up"></i></span>
+                    {% else %}
+                        <span style="color: #2ecc71; margin-right: 8px;"><i class="fas fa-arrow-down"></i></span>
+                    {% endif %}
+                    {{ shap.rule }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- SHAP Chart -->
+        {% if result.shap_values %}
+        <div class="fade-in-up" style="--delay: 0.4s">
+            {% include 'components/shap_chart.html' %}
+        </div>
+        {% endif %}
+
+        <!-- Download Report Button -->
+        <div class="fade-in-up" style="--delay: 0.5s; margin-top: 1rem;">
+            <form action="{{ url_for('predict.download_report') }}" method="POST" target="_blank">
+                {% for key, value in form_data.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+                <button type="submit" class="btn-primary" style="width: 100%; background: var(--gradient-success); margin-top: 1rem;">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span class="btn-text">Download Official Report</span>
+                </button>
+            </form>
+        </div>
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state glass-panel fade-in-up" style="--delay: 0.2s">
+            <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <h3 class="empty-title">Ready to Analyze</h3>
+            <p class="empty-text">Fill in the applicant details and click "Analyze Risk" to get an AI-powered credit risk assessment with SHAP explainability.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/form_validation.js') }}"></script>
+{% if result %}
+<script src="{{ url_for('static', filename='js/risk_gauge.js') }}"></script>
+<script src="{{ url_for('static', filename='js/shap_chart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/simulator.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize risk gauge with probability
+        if (typeof initRiskGauge === 'function') {
+            initRiskGauge({{ result.probability }});
+        }
+        
+        // Initialize SHAP chart
+        {% if result.shap_values %}
+        if (typeof initShapChart === 'function') {
+            initShapChart({{ result.shap_values | tojson }}, {{ result.base_value }});
+        }
+        {% endif %}
+    });
+</script>
+{% endif %}
+{% endblock %}

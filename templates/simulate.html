@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}What-If Simulator{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in-up">
+    <h1 class="page-title">What-If Loan Simulator</h1>
+    <p class="page-subtitle">Instantly simulate credit risk and counter-offers without affecting the database.</p>
+</div>
+
+<div class="predict-layout" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+    <!-- Left Column: Sliders -->
+    <div class="form-column fade-in-up" style="flex: 1; min-width: 350px; --delay: 0.1s;">
+        <div class="form-panel glass-panel">
+            <div class="form-header">
+                <h2 class="form-title">Adjust Parameters</h2>
+            </div>
+            <div class="form-grid" style="display: flex; flex-direction: column; gap: 1.5rem; padding-top: 1rem;">
+                
+                <div class="slider-group">
+                    <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 600;">
+                        <span>Annual Income (₹)</span>
+                        <strong id="val_income">60000</strong>
+                    </label>
+                    <input type="range" id="person_income" min="10000" max="200000" step="5000" value="60000" style="width: 100%;">
+                </div>
+                
+                <div class="slider-group">
+                    <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 600;">
+                        <span>Loan Amount (₹)</span>
+                        <strong id="val_amnt">15000</strong>
+                    </label>
+                    <input type="range" id="loan_amnt" min="1000" max="50000" step="1000" value="15000" style="width: 100%;">
+                </div>
+                
+                <div class="slider-group">
+                    <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 600;">
+                        <span>Interest Rate (%)</span>
+                        <strong id="val_rate">10.0</strong>
+                    </label>
+                    <input type="range" id="loan_int_rate" min="1.0" max="30.0" step="0.5" value="10.0" style="width: 100%;">
+                </div>
+                
+                <div class="slider-group">
+                    <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 600;">
+                        <span>CIBIL Score</span>
+                        <strong id="val_score">750</strong>
+                    </label>
+                    <input type="range" id="cibil_score" min="300" max="900" step="10" value="750" style="width: 100%;">
+                </div>
+                
+                <div class="slider-group">
+                    <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 600;">
+                        <span>Employment Length (yrs)</span>
+                        <strong id="val_length">5.0</strong>
+                    </label>
+                    <input type="range" id="person_emp_length" min="0" max="40" step="0.5" value="5.0" style="width: 100%;">
+                </div>
+                
+                <div class="slider-group">
+                    <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 600;">
+                        <span>Age</span>
+                        <strong id="val_age">30</strong>
+                    </label>
+                    <input type="range" id="person_age" min="18" max="80" step="1" value="30" style="width: 100%;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Results -->
+    <div class="results-column fade-in-up" style="flex: 1; min-width: 350px; --delay: 0.2s;">
+        <!-- AI Decision Card -->
+        <div id="sim-decision-card" class="policy-banner policy-approved" style="transition: all 0.3s ease;">
+            <div class="policy-action" id="sim-action">Loading...</div>
+            <div class="policy-reason" id="sim-reason">Initializing simulation engine...</div>
+        </div>
+        
+        <!-- Risk Gauge Placeholder -->
+        <div class="gauge-card glass-panel" style="margin-top: 1.5rem;">
+            <div class="gauge-header">
+                <h3 class="gauge-title">Probability of Default</h3>
+            </div>
+            <div style="text-align: center; padding: 2rem;">
+                <div style="font-size: 3rem; font-weight: 800; color: var(--text-primary);" id="sim-prob">0%</div>
+                <div style="margin-top: 1rem; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden;">
+                    <div id="sim-prob-bar" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease, background 0.3s ease;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="financial-panel glass-panel" style="margin-top: 1.5rem;">
+            <div class="panel-header">
+                <h3 class="panel-title">Financial Impact</h3>
+            </div>
+            <div class="financial-grid">
+                <div class="fin-stat">
+                    <span class="fin-label">Monthly EMI</span>
+                    <span class="fin-value" id="sim-emi">₹0</span>
+                </div>
+                <div class="fin-stat">
+                    <span class="fin-label">DTI Ratio</span>
+                    <span class="fin-value" id="sim-dti">0%</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Counter Offer panel (hidden by default) -->
+        <div id="sim-counter-offer" class="counter-offer-panel glass-panel" style="display: none; margin-top: 1.5rem; border: 1px solid #f39c12;">
+            <div class="panel-header">
+                <h3 class="panel-title" style="color: #f39c12;">Counter Offer Generated</h3>
+            </div>
+            <div style="padding: 1rem; color: var(--text-secondary);" id="sim-counter-desc">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let debounceTimer;
+    const inputs = [
+        {id: 'person_income', valId: 'val_income'},
+        {id: 'loan_amnt', valId: 'val_amnt'},
+        {id: 'loan_int_rate', valId: 'val_rate'},
+        {id: 'cibil_score', valId: 'val_score'},
+        {id: 'person_emp_length', valId: 'val_length'},
+        {id: 'person_age', valId: 'val_age'}
+    ];
+    
+    function updateValues() {
+        inputs.forEach(inp => {
+            const val = document.getElementById(inp.id).value;
+            document.getElementById(inp.valId).innerText = val;
+        });
+    }
+
+    async function runSimulation() {
+        updateValues();
+        
+        const payload = {};
+        inputs.forEach(inp => {
+            payload[inp.id] = parseFloat(document.getElementById(inp.id).value);
+        });
+        
+        try {
+            const res = await fetch('/api/simulate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            document.getElementById('sim-prob').innerText = data.probability + '%';
+            
+            const probBar = document.getElementById('sim-prob-bar');
+            probBar.style.width = data.probability + '%';
+            if(data.probability < 20) {
+                probBar.style.background = '#2ecc71';
+                document.getElementById('sim-prob').style.color = '#2ecc71';
+            } else if(data.probability < 45) {
+                probBar.style.background = '#f1c40f';
+                document.getElementById('sim-prob').style.color = '#f1c40f';
+            } else if(data.probability < 70) {
+                probBar.style.background = '#e67e22';
+                document.getElementById('sim-prob').style.color = '#e67e22';
+            } else {
+                probBar.style.background = '#e74c3c';
+                document.getElementById('sim-prob').style.color = '#e74c3c';
+            }
+            
+            const card = document.getElementById('sim-decision-card');
+            const action = document.getElementById('sim-action');
+            const reason = document.getElementById('sim-reason');
+            
+            if (data.pricing && data.pricing.action) {
+                action.innerHTML = data.pricing.risk_metadata.icon + ' ' + data.pricing.action;
+                reason.innerText = data.pricing.risk_metadata.explanation;
+                card.className = 'policy-banner ' + data.pricing.risk_metadata.css_class;
+                
+                if (data.pricing.original_terms) {
+                    document.getElementById('sim-emi').innerText = '₹' + data.pricing.original_terms.emi;
+                    document.getElementById('sim-dti').innerText = (data.pricing.original_terms.dti * 100).toFixed(1) + '%';
+                }
+                
+                const counterPanel = document.getElementById('sim-counter-offer');
+                if (data.pricing.counter_offer) {
+                    counterPanel.style.display = 'block';
+                    document.getElementById('sim-counter-desc').innerHTML = `
+                        <strong>Reduced Loan Amount:</strong> ₹${data.pricing.counter_offer.loan_amount}<br>
+                        <strong>Revised EMI:</strong> ₹${data.pricing.counter_offer.emi}<br>
+                        <strong>Revised DTI:</strong> ${(data.pricing.counter_offer.dti * 100).toFixed(1)}%
+                    `;
+                } else {
+                    counterPanel.style.display = 'none';
+                }
+            }
+        } catch(e) {
+            console.error("Simulation error", e);
+        }
+    }
+
+    inputs.forEach(inp => {
+        document.getElementById(inp.id).addEventListener('input', () => {
+            updateValues();
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(runSimulation, 300);
+        });
+    });
+
+    runSimulation();
+</script>
+{% endblock %}
